@@ -6,6 +6,12 @@ import typer
 from rich.console import Console
 
 from neurocvr.data.loaders import load_etco2_csv, load_nifti
+from neurocvr.preprocessing.bold import (
+    apply_brain_mask,
+    compute_global_baseline,
+    compute_voxel_baseline,
+    create_full_brain_mask,
+)
 from neurocvr.preprocessing.etco2 import prepare_etco2_regressor
 
 app = typer.Typer(help="NeuroCVR-AI command line interface.")
@@ -58,6 +64,41 @@ def prepare_etco2(
     console.print(f"Global shift: {global_shift_seconds} s")
     console.print(f"Samples: {trace.n_samples}")
     console.print(f"First 5 regressor values: {trace.etco2_mmhg[:5]}")
+
+@app.command()
+def inspect_bold(
+    path: Path,
+    baseline_volumes: int = 30,
+) -> None:
+    """
+    Inspect a 4D BOLD image and compute simple baseline information.
+
+    This demo command uses a full spatial mask. Real analysis should use a
+    brain-extracted binary mask.
+    """
+    image = load_nifti(path)
+
+    if not image.is_4d:
+        raise typer.BadParameter("Expected a 4D BOLD NIfTI image.")
+
+    mask = create_full_brain_mask(image.shape[:3])
+    matrix = apply_brain_mask(image.data, mask)
+
+    n_baseline = min(baseline_volumes, matrix.n_timepoints)
+    voxel_baseline = compute_voxel_baseline(
+        matrix.data,
+        n_baseline_volumes=n_baseline,
+    )
+    global_baseline = compute_global_baseline(voxel_baseline)
+
+    console.print("[bold green]Inspected BOLD image[/bold green]")
+    console.print(f"Input file: {path}")
+    console.print(f"Image shape: {image.shape}")
+    console.print(f"Time points: {matrix.n_timepoints}")
+    console.print(f"Voxels in mask: {matrix.n_voxels}")
+    console.print(f"Baseline volumes used: {n_baseline}")
+    console.print(f"Global baseline: {global_baseline:.4f}")
+
 
 if __name__ == "__main__":
     app()
