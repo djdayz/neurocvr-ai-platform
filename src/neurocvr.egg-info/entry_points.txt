@@ -1,0 +1,2 @@
+[console_scripts]
+neurocvr = neurocvr.cli:app

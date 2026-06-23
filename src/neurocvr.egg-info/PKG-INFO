@@ -1,0 +1,56 @@
+Metadata-Version: 2.4
+Name: neurocvr
+Version: 0.1.0
+Summary: Cloud-native AI-assisted BOLD-fMRI cerebrovascular reactivity analysis pipeline.
+Author: Dayoon Jung
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: numpy>=1.26
+Requires-Dist: pandas>=2.2
+Requires-Dist: scipy>=1.12
+Requires-Dist: nibabel>=5.2
+Requires-Dist: scikit-learn>=1.4
+Requires-Dist: matplotlib>=3.8
+Requires-Dist: pydantic>=2.6
+Requires-Dist: typer>=0.12
+Requires-Dist: rich>=13.7
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0; extra == "dev"
+Requires-Dist: ruff>=0.4; extra == "dev"
+Requires-Dist: mypy>=1.8; extra == "dev"
+Requires-Dist: ipykernel>=6.29; extra == "dev"
+Provides-Extra: ml
+Requires-Dist: torch>=2.2; extra == "ml"
+Requires-Dist: mlflow>=2.10; extra == "ml"
+Provides-Extra: api
+Requires-Dist: fastapi>=0.110; extra == "api"
+Requires-Dist: uvicorn>=0.27; extra == "api"
+
+# NeuroCVR-AI
+
+Cloud-native AI-assisted platform for BOLD-fMRI cerebrovascular reactivity (CVR) analysis.
+
+This project builds an end-to-end medical imaging ML engineering pipeline for:
+- BIDS/NIfTI/ETCO2 data ingestion
+- BOLD-fMRI CVR magnitude and delay estimation
+- GLM baseline modelling
+- physics-informed / hybrid neural modelling
+- simulation-based validation
+- experiment tracking and model registry
+- FastAPI inference service
+- cloud deployment
+- AI-assisted technical QC report generation
+
+## Important
+
+This is a research and portfolio prototype. It is not a clinical diagnostic tool and must not be used for patient care.
+
+## Core methods
+
+- BOLD-fMRI preprocessing
+- ETCO2 alignment
+- voxelwise GLM with lag optimisation
+- tissue-wise simulation
+- physics-informed neural modelling
+- RMSE, MAE, PCC, SSIM, bias and Bland-Altman validation
+- domain-shift and QC analysis
