@@ -28,3 +28,6 @@ def inspect_etco2(path: Path) -> None:
     console.print(f"Rows: {len(df)}")
     console.print(f"Columns: {list(df.columns)}")
     console.print(df.head())
+
+if __name__=="__main__":
+    app()

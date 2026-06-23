@@ -30,3 +30,5 @@ mlruns/
 *.pem
 *.key
 .env.*
+# Python packaging build metadata
+*.egg-info/
