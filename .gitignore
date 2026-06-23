@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.env
+.ipynb_checkpoints/
+
+# Data
+data/raw/
+data/processed/
+outputs/
+*.nii
+*.nii.gz
+*.mgz
+*.dcm
+*.h5
+*.pt
+*.pth
+*.pkl
+*.joblib
+
+# MLflow / DVC
+mlruns/
+.dvc/tmp/
+
+# OS
+.DS_Store
+
+# Secrets
+*.pem
+*.key
+.env.*
