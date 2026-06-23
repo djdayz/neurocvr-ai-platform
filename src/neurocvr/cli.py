@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import numpy as np
 import typer
 from rich.console import Console
 
+from neurocvr.cvr.glm import fit_glm_delay_search, shift_regressor_by_delay
 from neurocvr.data.loaders import load_etco2_csv, load_nifti
 from neurocvr.preprocessing.bold import (
     apply_brain_mask,
@@ -98,6 +100,40 @@ def inspect_bold(
     console.print(f"Voxels in mask: {matrix.n_voxels}")
     console.print(f"Baseline volumes used: {n_baseline}")
     console.print(f"Global baseline: {global_baseline:.4f}")
+
+
+@app.command()
+def glm_demo() -> None:
+    """Run a tiny synthetic GLM CVR demo."""
+    time = np.arange(10, dtype=float)
+    etco2 = np.array([0.0, 0.0, 0.0, 5.0, 10.0, 10.0, 5.0, 0.0, 0.0, 0.0])
+
+    bold_baseline = 100.0
+    true_delay = 2.0
+    true_cvr = np.array([0.8, 1.2])
+
+    delayed_etco2 = shift_regressor_by_delay(
+        time_seconds=time,
+        regressor=etco2,
+        delay_seconds=true_delay,
+    )
+
+    true_beta = true_cvr / 100.0 * bold_baseline
+    bold = bold_baseline + np.outer(delayed_etco2, true_beta)
+
+    result = fit_glm_delay_search(
+        bold_matrix=bold,
+        etco2_regressor=etco2,
+        time_seconds=time,
+        bold_baseline=bold_baseline,
+        delay_candidates_seconds=np.array([0.0, 1.0, 2.0, 3.0]),
+    )
+
+    console.print("[bold green]Synthetic GLM CVR demo[/bold green]")
+    console.print(f"True CVR values: {true_cvr}")
+    console.print(f"Estimated CVR values: {result.cvr_magnitude}")
+    console.print(f"True delay: {true_delay}")
+    console.print(f"Estimated delays: {result.delay_seconds}")  
 
 
 if __name__ == "__main__":
