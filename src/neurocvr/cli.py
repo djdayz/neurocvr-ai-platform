@@ -12,6 +12,11 @@ from neurocvr.data.loaders import load_etco2_csv, load_nifti
 from neurocvr.data.writers import save_nifti_like
 from neurocvr.evaluation.benchmark import run_synthetic_glm_benchmark
 from neurocvr.evaluation.metrics import compute_regression_metrics
+from neurocvr.evaluation.tracking import (
+    regression_metrics_to_dict,
+    save_metrics_csv,
+    save_metrics_json,
+)
 from neurocvr.preprocessing.bold import (
     apply_brain_mask,
     compute_global_baseline,
@@ -331,6 +336,31 @@ def benchmark_demo(
         output_path=output_dir / "estimated_delay.nii.gz",
     )
 
+    metric_record = {
+        "run_name": "synthetic_glm_benchmark",
+        "tcnr": tcnr,
+        "seed": seed,
+        "spatial_shape": str(result.dataset.bold_4d.shape[:3]),
+        "n_timepoints": result.dataset.bold_4d.shape[-1],
+        "true_cvr_path": str(true_cvr_path),
+        "estimated_cvr_path": str(estimated_cvr_path),
+        "true_delay_path": str(true_delay_path),
+        "estimated_delay_path": str(estimated_delay_path),
+    }
+    metric_record.update(regression_metrics_to_dict(result.cvr_metrics, prefix="cvr"))
+    metric_record.update(
+        regression_metrics_to_dict(result.delay_metrics, prefix="delay")
+    )
+
+    metrics_json_path = save_metrics_json(
+        record=metric_record,
+        output_path=output_dir / "metrics.json",
+    )
+    metrics_csv_path = save_metrics_csv(
+        record=metric_record,
+        output_path=output_dir / "metrics.csv",
+    )
+
     console.print("[bold green]Synthetic GLM benchmark complete[/bold green]")
     console.print(f"tCNR: {tcnr}")
     console.print(f"Seed: {seed}")
@@ -352,6 +382,9 @@ def benchmark_demo(
     console.print(f"Estimated CVR: {estimated_cvr_path}")
     console.print(f"True delay: {true_delay_path}")
     console.print(f"Estimated delay: {estimated_delay_path}")
+
+    console.print(f"Metrics JSON: {metrics_json_path}")
+    console.print(f"Metrics CSV: {metrics_csv_path}")
 
 
 if __name__ == "__main__":
