@@ -2,17 +2,20 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import nibabel as nib
 import numpy as np
 import typer
 from rich.console import Console
 
 from neurocvr.cvr.glm import fit_glm_delay_search, shift_regressor_by_delay
 from neurocvr.data.loaders import load_etco2_csv, load_nifti
+from neurocvr.data.writers import save_nifti_like
 from neurocvr.preprocessing.bold import (
     apply_brain_mask,
     compute_global_baseline,
     compute_voxel_baseline,
     create_full_brain_mask,
+    reshape_voxel_values_to_volume,
 )
 from neurocvr.preprocessing.etco2 import prepare_etco2_regressor
 
@@ -134,6 +137,86 @@ def glm_demo() -> None:
     console.print(f"Estimated CVR values: {result.cvr_magnitude}")
     console.print(f"True delay: {true_delay}")
     console.print(f"Estimated delays: {result.delay_seconds}")  
+
+
+@app.command()
+def glm_save_demo(output_dir: Path = Path("outputs")) -> None:
+    """Run a synthetic GLM CVR demo and save CVR maps as NIfTI files."""
+    shape = (2, 2, 1, 10)
+    spatial_shape = shape[:3]
+
+    time = np.arange(shape[-1], dtype=float)
+    etco2 = np.array([0.0, 0.0, 0.0, 5.0, 10.0, 10.0, 5.0, 0.0, 0.0, 0.0])
+
+    bold_baseline = 100.0
+    true_delay = 2.0
+
+    true_cvr_volume = np.array(
+        [
+            [[0.8], [1.0]],
+            [[1.2], [1.4]],
+        ],
+        dtype=float,
+    )
+
+    mask = create_full_brain_mask(spatial_shape)
+    true_cvr_voxels = true_cvr_volume[mask]
+
+    delayed_etco2 = shift_regressor_by_delay(
+        time_seconds=time,
+        regressor=etco2,
+        delay_seconds=true_delay,
+    )
+
+    true_beta = true_cvr_voxels / 100.0 * bold_baseline
+    bold_matrix = bold_baseline + np.outer(delayed_etco2, true_beta)
+
+    bold_4d = np.zeros(shape, dtype=float)
+    for time_index in range(shape[-1]):
+        volume = reshape_voxel_values_to_volume(
+            voxel_values=bold_matrix[time_index, :],
+            mask=mask,
+        )
+        bold_4d[..., time_index] = volume
+
+    reference_image = nib.Nifti1Image(
+        bold_4d[..., 0].astype(np.float32),
+        affine=np.eye(4),
+    )
+
+    result = fit_glm_delay_search(
+        bold_matrix=bold_matrix,
+        etco2_regressor=etco2,
+        time_seconds=time,
+        bold_baseline=bold_baseline,
+        delay_candidates_seconds=np.array([0.0, 1.0, 2.0, 3.0]),
+    )
+
+    cvr_volume = reshape_voxel_values_to_volume(
+        voxel_values=result.cvr_magnitude,
+        mask=mask,
+    )
+    delay_volume = reshape_voxel_values_to_volume(
+        voxel_values=result.delay_seconds,
+        mask=mask,
+    )
+
+    cvr_path = save_nifti_like(
+        data=cvr_volume,
+        reference_image=reference_image,
+        output_path=output_dir / "demo_cvr_magnitude.nii.gz",
+    )
+    delay_path = save_nifti_like(
+        data=delay_volume,
+        reference_image=reference_image,
+        output_path=output_dir / "demo_cvr_delay.nii.gz",
+    )
+
+    console.print("[bold green]Saved synthetic GLM CVR maps[/bold green]")
+    console.print(f"CVR magnitude map: {cvr_path}")
+    console.print(f"CVR delay map: {delay_path}")
+    console.print(f"Estimated CVR values: {result.cvr_magnitude}")
+    console.print(f"Estimated delays: {result.delay_seconds}")
 
 
 if __name__ == "__main__":
