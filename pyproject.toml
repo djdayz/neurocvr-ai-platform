@@ -36,10 +36,6 @@ ml = [
     "mlflow>=2.10",
 ]
 
-api = [
-    "fastapi>=0.110",
-    "uvicorn>=0.27",
-]
 
 [project.scripts]
 neurocvr = "neurocvr.cli:app"
