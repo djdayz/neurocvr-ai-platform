@@ -10,6 +10,7 @@ from rich.console import Console
 from neurocvr.cvr.glm import fit_glm_delay_search, shift_regressor_by_delay
 from neurocvr.data.loaders import load_etco2_csv, load_nifti
 from neurocvr.data.writers import save_nifti_like
+from neurocvr.evaluation.metrics import compute_regression_metrics
 from neurocvr.preprocessing.bold import (
     apply_brain_mask,
     compute_global_baseline,
@@ -217,6 +218,25 @@ def glm_save_demo(output_dir: Path = Path("outputs")) -> None:
     console.print(f"CVR delay map: {delay_path}")
     console.print(f"Estimated CVR values: {result.cvr_magnitude}")
     console.print(f"Estimated delays: {result.delay_seconds}")
+
+
+@app.command()
+def eval_demo() -> None:
+    """Run a tiny synthetic CVR map evaluation demo."""
+    true_cvr = np.array([0.8, 1.0, 1.2, 1.4])
+    estimated_cvr = np.array([0.75, 1.05, 1.25, 1.35])
+
+    metrics = compute_regression_metrics(
+        y_true=true_cvr,
+        y_pred=estimated_cvr,
+    )
+
+    console.print("[bold green]Synthetic CVR evaluation demo[/bold green]")
+    console.print(f"RMSE: {metrics.rmse:.4f}")
+    console.print(f"MAE: {metrics.mae:.4f}")
+    console.print(f"Bias: {metrics.bias:.4f}")
+    console.print(f"PCC: {metrics.pcc:.4f}")
+    console.print(f"Valid voxels: {metrics.n_voxels}")
 
 
 if __name__ == "__main__":
