@@ -194,7 +194,7 @@ def add_tcnr_noise(
 
 def simulate_glm_cvr_dataset(
     spatial_shape: tuple[int, int, int] = (4, 5, 3),
-    n_timepoints: int = 60,
+    n_timepoints: int = 220,
     tr_seconds: float = 1.55,
     tcnr: float | None = 5.0,
     seed: int = 42,

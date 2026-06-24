@@ -10,6 +10,7 @@ from rich.console import Console
 from neurocvr.cvr.glm import fit_glm_delay_search, shift_regressor_by_delay
 from neurocvr.data.loaders import load_etco2_csv, load_nifti
 from neurocvr.data.writers import save_nifti_like
+from neurocvr.evaluation.benchmark import run_synthetic_glm_benchmark
 from neurocvr.evaluation.metrics import compute_regression_metrics
 from neurocvr.preprocessing.bold import (
     apply_brain_mask,
@@ -249,7 +250,7 @@ def simulate_demo(
     """Generate a small synthetic BOLD-CVR dataset and save it as NIfTI files."""
     dataset = simulate_glm_cvr_dataset(
         spatial_shape=(4, 5, 3),
-        n_timepoints=60,
+        n_timepoints=220,
         tr_seconds=1.55,
         tcnr=tcnr,
         seed=seed,
@@ -287,6 +288,70 @@ def simulate_demo(
     console.print(f"Shape: {dataset.bold_4d.shape}")
     console.print(f"tCNR: {tcnr}")
     console.print(f"Seed: {seed}")
+
+
+@app.command()
+def benchmark_demo(
+    output_dir: Path = Path("outputs/benchmark"),
+    tcnr: float = 5.0,
+    seed: int = 42,
+) -> None:
+    """Run synthetic BOLD simulation, GLM estimation, and CVR evaluation."""
+    result = run_synthetic_glm_benchmark(
+        spatial_shape=(4, 5, 3),
+        n_timepoints=220,
+        tr_seconds=1.55,
+        tcnr=tcnr,
+        seed=seed,
+    )
+
+    map_reference = nib.Nifti1Image(
+        result.dataset.bold_4d[..., 0].astype(np.float32),
+        affine=np.eye(4),
+    )
+
+    true_cvr_path = save_nifti_like(
+        data=result.dataset.cvr_magnitude_map,
+        reference_image=map_reference,
+        output_path=output_dir / "true_cvr_magnitude.nii.gz",
+    )
+    estimated_cvr_path = save_nifti_like(
+        data=result.estimated_cvr_map,
+        reference_image=map_reference,
+        output_path=output_dir / "estimated_cvr_magnitude.nii.gz",
+    )
+    true_delay_path = save_nifti_like(
+        data=result.dataset.delay_map,
+        reference_image=map_reference,
+        output_path=output_dir / "true_delay.nii.gz",
+    )
+    estimated_delay_path = save_nifti_like(
+        data=result.estimated_delay_map,
+        reference_image=map_reference,
+        output_path=output_dir / "estimated_delay.nii.gz",
+    )
+
+    console.print("[bold green]Synthetic GLM benchmark complete[/bold green]")
+    console.print(f"tCNR: {tcnr}")
+    console.print(f"Seed: {seed}")
+
+    console.print("\n[bold]CVR magnitude metrics[/bold]")
+    console.print(f"RMSE: {result.cvr_metrics.rmse:.4f}")
+    console.print(f"MAE: {result.cvr_metrics.mae:.4f}")
+    console.print(f"Bias: {result.cvr_metrics.bias:.4f}")
+    console.print(f"PCC: {result.cvr_metrics.pcc:.4f}")
+
+    console.print("\n[bold]Delay metrics[/bold]")
+    console.print(f"RMSE: {result.delay_metrics.rmse:.4f} s")
+    console.print(f"MAE: {result.delay_metrics.mae:.4f} s")
+    console.print(f"Bias: {result.delay_metrics.bias:.4f} s")
+    console.print(f"PCC: {result.delay_metrics.pcc:.4f}")
+
+    console.print("\n[bold]Saved maps[/bold]")
+    console.print(f"True CVR: {true_cvr_path}")
+    console.print(f"Estimated CVR: {estimated_cvr_path}")
+    console.print(f"True delay: {true_delay_path}")
+    console.print(f"Estimated delay: {estimated_delay_path}")
 
 
 if __name__ == "__main__":
