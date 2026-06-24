@@ -19,6 +19,7 @@ from neurocvr.preprocessing.bold import (
     reshape_voxel_values_to_volume,
 )
 from neurocvr.preprocessing.etco2 import prepare_etco2_regressor
+from neurocvr.simulation.synthetic import simulate_glm_cvr_dataset
 
 app = typer.Typer(help="NeuroCVR-AI command line interface.")
 console = Console()
@@ -237,6 +238,55 @@ def eval_demo() -> None:
     console.print(f"Bias: {metrics.bias:.4f}")
     console.print(f"PCC: {metrics.pcc:.4f}")
     console.print(f"Valid voxels: {metrics.n_voxels}")
+
+
+@app.command()
+def simulate_demo(
+    output_dir: Path = Path("outputs/simulation"),
+    tcnr: float = 5.0,
+    seed: int = 42,
+) -> None:
+    """Generate a small synthetic BOLD-CVR dataset and save it as NIfTI files."""
+    dataset = simulate_glm_cvr_dataset(
+        spatial_shape=(4, 5, 3),
+        n_timepoints=60,
+        tr_seconds=1.55,
+        tcnr=tcnr,
+        seed=seed,
+    )
+
+    bold_reference = nib.Nifti1Image(
+        dataset.bold_4d.astype(np.float32),
+        affine=np.eye(4),
+    )
+    map_reference = nib.Nifti1Image(
+        dataset.bold_4d[..., 0].astype(np.float32),
+        affine=np.eye(4),
+    )
+
+    bold_path = save_nifti_like(
+        data=dataset.bold_4d,
+        reference_image=bold_reference,
+        output_path=output_dir / "synthetic_bold.nii.gz",
+    )
+    cvr_path = save_nifti_like(
+        data=dataset.cvr_magnitude_map,
+        reference_image=map_reference,
+        output_path=output_dir / "synthetic_true_cvr_magnitude.nii.gz",
+    )
+    delay_path = save_nifti_like(
+        data=dataset.delay_map,
+        reference_image=map_reference,
+        output_path=output_dir / "synthetic_true_delay.nii.gz",
+    )
+
+    console.print("[bold green]Generated synthetic CVR dataset[/bold green]")
+    console.print(f"BOLD image: {bold_path}")
+    console.print(f"True CVR map: {cvr_path}")
+    console.print(f"True delay map: {delay_path}")
+    console.print(f"Shape: {dataset.bold_4d.shape}")
+    console.print(f"tCNR: {tcnr}")
+    console.print(f"Seed: {seed}")
 
 
 if __name__ == "__main__":
