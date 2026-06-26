@@ -200,3 +200,28 @@ Interactive API documentation is available at:
 http://127.0.0.1:8000/docs
 
 The API is intended for technical benchmarking and research workflow demonstration only. It is not for clinical decision-making.
+
+## Cloud deployment
+
+The FastAPI service has been deployed and tested on AWS EC2 as a portfolio cloud deployment.
+
+The deployment used:
+
+- Ubuntu EC2 instance
+- Python virtual environment
+- FastAPI and Uvicorn
+- public REST API endpoint
+- inbound security group rule for port 8000
+
+Deployment details are documented in:
+
+- docs/aws_ec2_deployment.md
+- docs/cloud_deployment.md
+- docs/portfolio_summary.md
+
+Cloud API endpoints:
+
+- GET /health
+- POST /benchmarks/synthetic-glm
+- POST /reports/synthetic-glm-qc
+- GET /docs
