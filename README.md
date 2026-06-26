@@ -246,3 +246,15 @@ Generated files:
 - reports/mlflow_sweep/delay_rmse_vs_tcnr.png
 
 These reports summarise how CVR magnitude and delay recovery change across tCNR noise levels.
+
+## Automated experiment report
+
+The exported MLflow sweep can be converted into a Markdown experiment report:
+
+neurocvr write-report
+
+Generated report:
+
+- reports/mlflow_sweep/experiment_report.md
+
+The report summarises the benchmark setup, best-performing tCNR conditions, summary metrics, plots, interpretation, engineering relevance, and safety limitations.

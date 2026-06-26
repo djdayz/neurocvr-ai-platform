@@ -33,6 +33,7 @@ from neurocvr.preprocessing.bold import (
     reshape_voxel_values_to_volume,
 )
 from neurocvr.preprocessing.etco2 import prepare_etco2_regressor
+from neurocvr.reporting.experiment_report import write_experiment_report
 from neurocvr.reporting.qc_report import generate_qc_report, qc_report_to_markdown
 from neurocvr.simulation.synthetic import simulate_glm_cvr_dataset
 
@@ -659,6 +660,21 @@ def export_mlflow_sweep(
     console.print(f"CVR RMSE plot: {cvr_plot_path}")
     console.print(f"Delay RMSE plot: {delay_plot_path}")
 
+
+@app.command()
+def write_report(
+    summary_path: Path = Path("reports/mlflow_sweep/sweep_summary.csv"),
+    output_path: Path = Path("reports/mlflow_sweep/experiment_report.md"),
+) -> None:
+    """Write a Markdown report from exported MLflow sweep results."""
+    report_path = write_experiment_report(
+        summary_path=summary_path,
+        output_path=output_path,
+    )
+
+    console.print("[bold green]Wrote experiment report[/bold green]")
+    console.print(f"Report: {report_path}")
+    
 
 if __name__ == "__main__":
     app()
