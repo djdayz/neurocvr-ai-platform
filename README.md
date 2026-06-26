@@ -1,60 +1,74 @@
 # NeuroCVR-AI
 
-Research ML engineering pipeline for BOLD-fMRI cerebrovascular reactivity (CVR) analysis.
+End-to-end medical imaging ML engineering project for BOLD-fMRI cerebrovascular reactivity analysis.
 
-This project builds an end-to-end medical imaging analysis workflow for:
-
-- BOLD-fMRI and ETCO2 data loading
-- ETCO2 preprocessing and interpolation
-- BOLD signal preprocessing
-- voxelwise GLM CVR magnitude and delay estimation
-- synthetic CVR simulation
-- benchmark evaluation against ground truth
-- NIfTI output generation
-- reproducible metric tracking to JSON and CSV
-- command line execution
+This project turns a research CVR workflow into a reproducible machine learning engineering pipeline. It is designed to demonstrate skills relevant to R&D Engineer, Machine Learning Engineer, and Medical Imaging AI roles.
 
 This is a research and portfolio prototype. It is not a clinical diagnostic tool and must not be used for patient care.
 
-## Motivation
+## Project goal
 
-Cerebrovascular reactivity mapping estimates how strongly and how quickly cerebral blood vessels respond to a vasoactive CO2 stimulus.
+Cerebrovascular reactivity, or CVR, measures how strongly and how quickly cerebral blood vessels respond to a vasoactive CO2 stimulus.
 
-This project is inspired by my MPhys thesis on simulation-based evaluation of CVR mapping in BOLD MRI using physics-informed neural networks. The current repository turns that research workflow into a cleaner ML engineering system with modular Python code, automated tests, CLI tools, synthetic benchmarking, NIfTI outputs, and experiment tracking.
+This project estimates CVR magnitude and delay from BOLD-fMRI and ETCO2 data. It is inspired by my MPhys thesis on simulation-based evaluation of CVR mapping in BOLD MRI using physics-informed neural networks.
 
-## Current pipeline
+The current repository focuses on building the research workflow into a clean engineering system with modular Python code, tests, command line tools, simulation, benchmark evaluation, NIfTI outputs, and metric tracking.
 
-Synthetic CVR ground truth
--> ETCO2 block regressor
--> Synthetic BOLD simulation
--> BOLD masking and baseline extraction
--> Voxelwise GLM with delay search
--> CVR magnitude and delay map reconstruction
--> Metric evaluation
--> NIfTI maps plus JSON/CSV metric tracking
+## Current implemented pipeline
+
+1. Generate synthetic ground-truth CVR magnitude and delay maps
+2. Generate an ETCO2 block-paradigm regressor
+3. Simulate synthetic BOLD-fMRI data
+4. Apply BOLD masking and baseline extraction
+5. Run voxelwise GLM with delay search
+6. Reconstruct CVR magnitude and delay maps
+7. Evaluate against ground truth
+8. Save NIfTI maps and JSON/CSV metrics
+
+## Implemented features
+
+- Python package structure using src layout
+- NIfTI loading and writing with nibabel
+- ETCO2 CSV loading
+- ETCO2 conversion from percent CO2 to mmHg
+- ETCO2 baseline correction and interpolation
+- BOLD 4D image validation
+- Brain-mask application
+- Time-by-voxel BOLD matrix construction
+- Voxelwise and global BOLD baseline estimation
+- Percent signal change calculation
+- Voxelwise GLM fitting
+- GLM delay search using minimum sum of squared residuals
+- CVR magnitude estimation
+- Synthetic CVR and BOLD data generation
+- tCNR-controlled Gaussian noise simulation
+- RMSE, MAE, bias, PCC, and valid voxel count metrics
+- Benchmark metrics saved to JSON and CSV
+- CLI commands for demos and benchmarks
+- Pytest test suite
+- Ruff linting
 
 ## Repository structure
 
 src/neurocvr/
-  config/          future config handling
   cvr/             CVR estimation models
-  data/            loaders and NIfTI writers
-  evaluation/      metrics, benchmark, tracking
-  models/          future ML/PINN models
+  data/            data loaders and NIfTI writers
+  evaluation/      metrics, benchmark pipeline, and tracking
+  models/          future ML and PINN models
   preprocessing/   ETCO2 and BOLD preprocessing
-  reporting/       future report generation
-  simulation/      synthetic CVR/BOLD dataset generation
+  reporting/       future QC and report generation
+  simulation/      synthetic CVR and BOLD dataset generation
 
 tests/             pytest test suite
-configs/           future YAML configs
-data/              local demo/raw/processed data
-outputs/           generated outputs, ignored by Git
+configs/           future YAML config files
+data/              local demo, raw, and processed data
+outputs/           generated outputs ignored by Git
 docs/              future documentation
 notebooks/         exploratory notebooks
 
 ## Installation
 
-Create and activate a conda environment:
+Create and activate the conda environment:
 
 conda create -n neurocvr python=3.11 -y
 conda activate neurocvr
@@ -96,84 +110,57 @@ Run the full synthetic GLM benchmark:
 
 neurocvr benchmark-demo --tcnr 5.0 --seed 42
 
-This produces:
+The benchmark writes outputs to:
 
 outputs/benchmark/
-  true_cvr_magnitude.nii.gz
-  estimated_cvr_magnitude.nii.gz
-  true_delay.nii.gz
-  estimated_delay.nii.gz
-  metrics.json
-  metrics.csv
 
-Example benchmark output:
+Expected benchmark files:
 
-CVR magnitude metrics
-RMSE: 0.0318
-MAE: 0.0228
-Bias: 0.0043
-PCC: 0.9963
+- true_cvr_magnitude.nii.gz
+- estimated_cvr_magnitude.nii.gz
+- true_delay.nii.gz
+- estimated_delay.nii.gz
+- metrics.json
+- metrics.csv
 
-Delay metrics
-RMSE: 0.4151 s
-MAE: 0.3527 s
-Bias: 0.0124 s
-PCC: 0.9825
+Example benchmark metrics:
 
-## Implemented components
+CVR magnitude:
+- RMSE: 0.0318
+- MAE: 0.0228
+- Bias: 0.0043
+- PCC: 0.9963
 
-Data loading:
-- NIfTI loading with nibabel
-- ETCO2 CSV loading
-- NIfTI writing using reference image geometry
+Delay:
+- RMSE: 0.4151 s
+- MAE: 0.3527 s
+- Bias: 0.0124 s
+- PCC: 0.9825
 
-ETCO2 preprocessing:
-- CO2 percentage to mmHg conversion
-- baseline estimation
-- temporal shifting
-- interpolation to BOLD acquisition time axis
-- baseline-corrected ETCO2 regressor generation
+## Engineering roadmap
 
-BOLD preprocessing:
-- 4D BOLD validation
-- brain-mask application
-- time-by-voxel matrix construction
-- voxelwise and global baseline estimation
-- percent signal change calculation
-- voxel-to-volume reconstruction
+Planned upgrades:
 
-CVR estimation:
-- voxelwise GLM
-- intercept, ETCO2 beta, and linear drift term
-- fixed-delay fitting
-- delay-search fitting using minimum SSR
-- CVR magnitude estimation
+1. YAML config support for reproducible experiments
+2. GitHub Actions CI for automated tests and linting
+3. Docker containerisation
+4. FastAPI service for benchmark and inference endpoints
+5. Local API testing with curl
+6. Cloud deployment prototype using Azure or AWS
+7. GenAI-assisted technical QC report generation
+8. MLflow experiment tracking
+9. Physics-informed neural network or hybrid model module
+10. Portfolio documentation and demo screenshots
 
-Evaluation:
-- RMSE
-- MAE
-- mean bias
-- Pearson correlation coefficient
-- valid voxel count
-- JSON and CSV metric tracking
+## GenAI safety scope
 
-Simulation:
-- synthetic ground-truth CVR magnitude maps
-- synthetic ground-truth delay maps
-- ETCO2 block-paradigm regressor
-- GLM-style BOLD signal simulation
-- approximate tCNR-controlled Gaussian noise
+The GenAI component will only generate technical QC summaries from metrics and pipeline outputs.
 
-## Roadmap
+It will not provide diagnosis, treatment advice, or clinical decision-making.
 
-Planned next steps:
+Example intended GenAI output:
 
-- YAML configuration files for reproducible benchmark runs
-- MLflow experiment tracking
-- Docker containerisation
-- GitHub Actions CI
-- physics-informed neural network model module
-- technical QC report generation
+The benchmark run passed expected technical QC thresholds. CVR magnitude recovery was strong, with low RMSE and high PCC. Delay recovery showed sub-second RMSE in this synthetic setting. These results support technical pipeline validity on simulated data but do not imply clinical validity.
 
 ## Research prototype notice
 
