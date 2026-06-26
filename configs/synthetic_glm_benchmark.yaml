@@ -1,0 +1,10 @@
+spatial_shape: [4, 5, 3]
+n_timepoints: 220
+tr_seconds: 1.55
+tcnr: 5.0
+seed: 42
+delay_min_seconds: 0.0
+delay_max_seconds: 8.0
+delay_step_seconds: 1.0
+n_baseline_volumes: 30
+output_dir: outputs/benchmark_config

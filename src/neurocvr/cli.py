@@ -7,6 +7,7 @@ import numpy as np
 import typer
 from rich.console import Console
 
+from neurocvr.config.benchmark import load_benchmark_config
 from neurocvr.cvr.glm import fit_glm_delay_search, shift_regressor_by_delay
 from neurocvr.data.loaders import load_etco2_csv, load_nifti
 from neurocvr.data.writers import save_nifti_like
@@ -383,6 +384,103 @@ def benchmark_demo(
     console.print(f"True delay: {true_delay_path}")
     console.print(f"Estimated delay: {estimated_delay_path}")
 
+    console.print(f"Metrics JSON: {metrics_json_path}")
+    console.print(f"Metrics CSV: {metrics_csv_path}")
+
+
+@app.command()
+def benchmark_from_config(config_path: Path) -> None:
+    """Run synthetic GLM benchmark from a YAML config file."""
+    config = load_benchmark_config(config_path)
+
+    result = run_synthetic_glm_benchmark(
+        spatial_shape=config.spatial_shape,
+        n_timepoints=config.n_timepoints,
+        tr_seconds=config.tr_seconds,
+        tcnr=config.tcnr,
+        seed=config.seed,
+        delay_min_seconds=config.delay_min_seconds,
+        delay_max_seconds=config.delay_max_seconds,
+        delay_step_seconds=config.delay_step_seconds,
+        n_baseline_volumes=config.n_baseline_volumes,
+    )
+
+    output_dir = config.output_dir
+
+    map_reference = nib.Nifti1Image(
+        result.dataset.bold_4d[..., 0].astype(np.float32),
+        affine=np.eye(4),
+    )
+
+    true_cvr_path = save_nifti_like(
+        data=result.dataset.cvr_magnitude_map,
+        reference_image=map_reference,
+        output_path=output_dir / "true_cvr_magnitude.nii.gz",
+    )
+    estimated_cvr_path = save_nifti_like(
+        data=result.estimated_cvr_map,
+        reference_image=map_reference,
+        output_path=output_dir / "estimated_cvr_magnitude.nii.gz",
+    )
+    true_delay_path = save_nifti_like(
+        data=result.dataset.delay_map,
+        reference_image=map_reference,
+        output_path=output_dir / "true_delay.nii.gz",
+    )
+    estimated_delay_path = save_nifti_like(
+        data=result.estimated_delay_map,
+        reference_image=map_reference,
+        output_path=output_dir / "estimated_delay.nii.gz",
+    )
+
+    metric_record = {
+        "run_name": "synthetic_glm_benchmark_from_config",
+        "config_path": str(config_path),
+        "tcnr": config.tcnr,
+        "seed": config.seed,
+        "spatial_shape": str(config.spatial_shape),
+        "n_timepoints": config.n_timepoints,
+        "tr_seconds": config.tr_seconds,
+        "true_cvr_path": str(true_cvr_path),
+        "estimated_cvr_path": str(estimated_cvr_path),
+        "true_delay_path": str(true_delay_path),
+        "estimated_delay_path": str(estimated_delay_path),
+    }
+    metric_record.update(regression_metrics_to_dict(result.cvr_metrics, prefix="cvr"))
+    metric_record.update(
+        regression_metrics_to_dict(result.delay_metrics, prefix="delay")
+    )
+
+    metrics_json_path = save_metrics_json(
+        record=metric_record,
+        output_path=output_dir / "metrics.json",
+    )
+    metrics_csv_path = save_metrics_csv(
+        record=metric_record,
+        output_path=output_dir / "metrics.csv",
+    )
+
+    console.print("[bold green]Config benchmark complete[/bold green]")
+    console.print(f"Config: {config_path}")
+    console.print(f"Output directory: {output_dir}")
+
+    console.print("\n[bold]CVR magnitude metrics[/bold]")
+    console.print(f"RMSE: {result.cvr_metrics.rmse:.4f}")
+    console.print(f"MAE: {result.cvr_metrics.mae:.4f}")
+    console.print(f"Bias: {result.cvr_metrics.bias:.4f}")
+    console.print(f"PCC: {result.cvr_metrics.pcc:.4f}")
+
+    console.print("\n[bold]Delay metrics[/bold]")
+    console.print(f"RMSE: {result.delay_metrics.rmse:.4f} s")
+    console.print(f"MAE: {result.delay_metrics.mae:.4f} s")
+    console.print(f"Bias: {result.delay_metrics.bias:.4f} s")
+    console.print(f"PCC: {result.delay_metrics.pcc:.4f}")
+
+    console.print("\n[bold]Saved outputs[/bold]")
+    console.print(f"True CVR: {true_cvr_path}")
+    console.print(f"Estimated CVR: {estimated_cvr_path}")
+    console.print(f"True delay: {true_delay_path}")
+    console.print(f"Estimated delay: {estimated_delay_path}")
     console.print(f"Metrics JSON: {metrics_json_path}")
     console.print(f"Metrics CSV: {metrics_csv_path}")
 
