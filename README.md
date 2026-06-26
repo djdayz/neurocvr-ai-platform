@@ -266,3 +266,39 @@ A safety-aware model card / project card is included at:
 - docs/model_card.md
 
 It describes intended use, non-clinical limitations, inputs, outputs, evaluation metrics, safety considerations, and future development.
+
+## Makefile commands
+
+Common project commands are available through the Makefile.
+
+Quality checks:
+
+make check
+
+Run the local FastAPI service:
+
+make api
+
+Run one benchmark:
+
+make benchmark
+
+Run an MLflow benchmark sweep:
+
+make sweep
+
+Export sweep results:
+
+make export-sweep
+
+Generate the Markdown experiment report:
+
+make report
+
+Run the full experiment reporting workflow:
+
+make full-report
+
+Open the local MLflow UI:
+
+make mlflow-ui
