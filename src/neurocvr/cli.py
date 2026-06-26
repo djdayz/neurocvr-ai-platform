@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import nibabel as nib
@@ -26,6 +27,7 @@ from neurocvr.preprocessing.bold import (
     reshape_voxel_values_to_volume,
 )
 from neurocvr.preprocessing.etco2 import prepare_etco2_regressor
+from neurocvr.reporting.qc_report import generate_qc_report, qc_report_to_markdown
 from neurocvr.simulation.synthetic import simulate_glm_cvr_dataset
 
 app = typer.Typer(help="NeuroCVR-AI command line interface.")
@@ -483,6 +485,37 @@ def benchmark_from_config(config_path: Path) -> None:
     console.print(f"Estimated delay: {estimated_delay_path}")
     console.print(f"Metrics JSON: {metrics_json_path}")
     console.print(f"Metrics CSV: {metrics_csv_path}")
+
+
+@app.command()
+def qc_report(
+    metrics_path: Path = Path("outputs/benchmark/metrics.json"),
+    output_path: Path = Path("outputs/benchmark/qc_report.md"),
+) -> None:
+    """Generate a technical QC report from benchmark metrics JSON."""
+    with metrics_path.open() as f:
+        metrics = json.load(f)
+
+    report = generate_qc_report(
+        cvr_rmse=metrics["cvr_rmse"],
+        cvr_mae=metrics["cvr_mae"],
+        cvr_bias=metrics["cvr_bias"],
+        cvr_pcc=metrics["cvr_pcc"],
+        delay_rmse=metrics["delay_rmse"],
+        delay_mae=metrics["delay_mae"],
+        delay_bias=metrics["delay_bias"],
+        delay_pcc=metrics["delay_pcc"],
+        n_voxels=metrics["cvr_n_voxels"],
+    )
+
+    markdown = qc_report_to_markdown(report)
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(markdown)
+
+    console.print("[bold green]Generated technical QC report[/bold green]")
+    console.print(f"Status: {report.status}")
+    console.print(f"Report: {output_path}")
 
 
 if __name__ == "__main__":
