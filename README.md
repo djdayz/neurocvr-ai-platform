@@ -258,3 +258,11 @@ Generated report:
 - reports/mlflow_sweep/experiment_report.md
 
 The report summarises the benchmark setup, best-performing tCNR conditions, summary metrics, plots, interpretation, engineering relevance, and safety limitations.
+
+## Model card / project card
+
+A safety-aware model card / project card is included at:
+
+- docs/model_card.md
+
+It describes intended use, non-clinical limitations, inputs, outputs, evaluation metrics, safety considerations, and future development.
