@@ -14,6 +14,7 @@ from neurocvr.data.loaders import load_etco2_csv, load_nifti
 from neurocvr.data.writers import save_nifti_like
 from neurocvr.evaluation.benchmark import run_synthetic_glm_benchmark
 from neurocvr.evaluation.metrics import compute_regression_metrics
+from neurocvr.evaluation.mlflow_tracking import log_benchmark_result_to_mlflow
 from neurocvr.evaluation.tracking import (
     regression_metrics_to_dict,
     save_metrics_csv,
@@ -516,6 +517,56 @@ def qc_report(
     console.print("[bold green]Generated technical QC report[/bold green]")
     console.print(f"Status: {report.status}")
     console.print(f"Report: {output_path}")
+
+
+@app.command()
+def benchmark_mlflow(
+    tracking_dir: Path = Path("mlruns"),
+    experiment_name: str = "NeuroCVR-AI",
+    run_name: str = "synthetic_glm_benchmark",
+    tcnr: float = 5.0,
+    seed: int = 42,
+) -> None:
+    """Run synthetic GLM benchmark and log metrics to MLflow."""
+    params = {
+        "spatial_shape": (4, 5, 3),
+        "n_timepoints": 220,
+        "tr_seconds": 1.55,
+        "tcnr": tcnr,
+        "seed": seed,
+        "delay_min_seconds": 0.0,
+        "delay_max_seconds": 8.0,
+        "delay_step_seconds": 1.0,
+        "n_baseline_volumes": 30,
+    }
+
+    result = run_synthetic_glm_benchmark(**params)
+
+    run_id = log_benchmark_result_to_mlflow(
+        result=result,
+        params=params,
+        tracking_dir=tracking_dir,
+        experiment_name=experiment_name,
+        run_name=run_name,
+    )
+
+    console.print("[bold green]Logged benchmark run to MLflow[/bold green]")
+    console.print(f"Experiment: {experiment_name}")
+    console.print(f"Run name: {run_name}")
+    console.print(f"Run ID: {run_id}")
+    console.print(f"Tracking directory: {tracking_dir}")
+
+    console.print("\n[bold]CVR magnitude metrics[/bold]")
+    console.print(f"RMSE: {result.cvr_metrics.rmse:.4f}")
+    console.print(f"MAE: {result.cvr_metrics.mae:.4f}")
+    console.print(f"Bias: {result.cvr_metrics.bias:.4f}")
+    console.print(f"PCC: {result.cvr_metrics.pcc:.4f}")
+
+    console.print("\n[bold]Delay metrics[/bold]")
+    console.print(f"RMSE: {result.delay_metrics.rmse:.4f} s")
+    console.print(f"MAE: {result.delay_metrics.mae:.4f} s")
+    console.print(f"Bias: {result.delay_metrics.bias:.4f} s")
+    console.print(f"PCC: {result.delay_metrics.pcc:.4f}")
 
 
 if __name__ == "__main__":
