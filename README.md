@@ -225,3 +225,24 @@ Cloud API endpoints:
 - POST /benchmarks/synthetic-glm
 - POST /reports/synthetic-glm-qc
 - GET /docs
+
+## Experiment sweep report
+
+MLflow sweep results can be exported to portfolio-ready CSV tables and plots.
+
+Run the benchmark sweep:
+
+neurocvr benchmark-sweep-mlflow
+
+Export the sweep report:
+
+neurocvr export-mlflow-sweep
+
+Generated files:
+
+- reports/mlflow_sweep/sweep_runs.csv
+- reports/mlflow_sweep/sweep_summary.csv
+- reports/mlflow_sweep/cvr_rmse_vs_tcnr.png
+- reports/mlflow_sweep/delay_rmse_vs_tcnr.png
+
+These reports summarise how CVR magnitude and delay recovery change across tCNR noise levels.

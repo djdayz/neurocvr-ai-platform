@@ -13,8 +13,13 @@ from neurocvr.cvr.glm import fit_glm_delay_search, shift_regressor_by_delay
 from neurocvr.data.loaders import load_etco2_csv, load_nifti
 from neurocvr.data.writers import save_nifti_like
 from neurocvr.evaluation.benchmark import run_synthetic_glm_benchmark
+from neurocvr.evaluation.experiment_analysis import export_mlflow_sweep_report
 from neurocvr.evaluation.metrics import compute_regression_metrics
-from neurocvr.evaluation.mlflow_tracking import log_benchmark_result_to_mlflow
+from neurocvr.evaluation.mlflow_tracking import (
+    log_benchmark_result_to_mlflow,
+    make_mlflow_runs_url,
+    make_mlflow_ui_command,
+)
 from neurocvr.evaluation.tracking import (
     regression_metrics_to_dict,
     save_metrics_csv,
@@ -555,6 +560,10 @@ def benchmark_mlflow(
     console.print(f"Run name: {run_name}")
     console.print(f"Run ID: {run_id}")
     console.print(f"Tracking directory: {tracking_dir}")
+    console.print(f"Open with: {make_mlflow_ui_command(tracking_dir)}")
+    runs_url = make_mlflow_runs_url(experiment_name, tracking_dir)
+    if runs_url is not None:
+        console.print(f"Runs table: {runs_url}")
 
     console.print("\n[bold]CVR magnitude metrics[/bold]")
     console.print(f"RMSE: {result.cvr_metrics.rmse:.4f}")
@@ -567,6 +576,88 @@ def benchmark_mlflow(
     console.print(f"MAE: {result.delay_metrics.mae:.4f} s")
     console.print(f"Bias: {result.delay_metrics.bias:.4f} s")
     console.print(f"PCC: {result.delay_metrics.pcc:.4f}")
+
+
+@app.command()
+def benchmark_sweep_mlflow(
+    tracking_dir: Path = Path("mlruns"),
+    experiment_name: str = "NeuroCVR-AI",
+    seeds: str = "42,43,44",
+    tcnrs: str = "0.5,1.0,2.0,5.0",
+) -> None:
+    """Run a tCNR/seed benchmark sweep and log all runs to MLflow."""
+    seed_values = [int(seed.strip()) for seed in seeds.split(",")]
+    tcnr_values = [float(tcnr.strip()) for tcnr in tcnrs.split(",")]
+
+    console.print("[bold green]Starting MLflow benchmark sweep[/bold green]")
+    console.print(f"tCNR values: {tcnr_values}")
+    console.print(f"Seeds: {seed_values}")
+
+    n_runs = 0
+
+    for tcnr in tcnr_values:
+        for seed in seed_values:
+            params = {
+                "spatial_shape": (4, 5, 3),
+                "n_timepoints": 220,
+                "tr_seconds": 1.55,
+                "tcnr": tcnr,
+                "seed": seed,
+                "delay_min_seconds": 0.0,
+                "delay_max_seconds": 8.0,
+                "delay_step_seconds": 1.0,
+                "n_baseline_volumes": 30,
+            }
+
+            result = run_synthetic_glm_benchmark(**params)
+
+            run_name = f"synthetic_glm_tcnr_{tcnr}_seed_{seed}"
+
+            run_id = log_benchmark_result_to_mlflow(
+                result=result,
+                params=params,
+                tracking_dir=tracking_dir,
+                experiment_name=experiment_name,
+                run_name=run_name,
+            )
+
+            n_runs += 1
+
+            console.print(
+                f"[green]Logged[/green] {run_name} | "
+                f"run_id={run_id} | "
+                f"cvr_rmse={result.cvr_metrics.rmse:.4f} | "
+                f"delay_rmse={result.delay_metrics.rmse:.4f}"
+            )
+
+    console.print(f"\n[bold green]Completed {n_runs} MLflow runs[/bold green]")
+    console.print(f"Tracking directory: {tracking_dir}")
+    console.print(f"Open with: {make_mlflow_ui_command(tracking_dir)}")
+    runs_url = make_mlflow_runs_url(experiment_name, tracking_dir)
+    if runs_url is not None:
+        console.print(f"Runs table: {runs_url}")
+
+
+@app.command()
+def export_mlflow_sweep(
+    tracking_db_path: Path = Path("mlruns/mlflow.db"),
+    experiment_name: str = "NeuroCVR-AI",
+    output_dir: Path = Path("reports/mlflow_sweep"),
+) -> None:
+    """Export MLflow sweep runs, summary tables, and plots."""
+    runs_path, summary_path, cvr_plot_path, delay_plot_path = (
+        export_mlflow_sweep_report(
+            tracking_db_path=tracking_db_path,
+            experiment_name=experiment_name,
+            output_dir=output_dir,
+        )
+    )
+
+    console.print("[bold green]Exported MLflow sweep report[/bold green]")
+    console.print(f"Runs CSV: {runs_path}")
+    console.print(f"Summary CSV: {summary_path}")
+    console.print(f"CVR RMSE plot: {cvr_plot_path}")
+    console.print(f"Delay RMSE plot: {delay_plot_path}")
 
 
 if __name__ == "__main__":

@@ -26,6 +26,36 @@ def make_sqlite_tracking_uri(tracking_dir: str | Path) -> str:
     return f"sqlite:///{db_path.resolve()}"
 
 
+def make_mlflow_ui_command(tracking_dir: str | Path, port: int = 5000) -> str:
+    """Build the MLflow UI command for the local SQLite tracking store."""
+    tracking_path = Path(tracking_dir)
+    artifact_path = tracking_path / "artifacts"
+    artifact_path.mkdir(parents=True, exist_ok=True)
+
+    return (
+        "mlflow ui "
+        f"--backend-store-uri {make_sqlite_tracking_uri(tracking_path)} "
+        f"--default-artifact-root {artifact_path.resolve().as_uri()} "
+        f"--port {port}"
+    )
+
+
+def make_mlflow_runs_url(
+    experiment_name: str,
+    tracking_dir: str | Path,
+    host: str = "http://127.0.0.1",
+    port: int = 5000,
+) -> str | None:
+    """Build a direct URL to the MLflow runs table for an experiment."""
+    mlflow.set_tracking_uri(make_sqlite_tracking_uri(tracking_dir))
+    experiment = mlflow.get_experiment_by_name(experiment_name)
+
+    if experiment is None:
+        return None
+
+    return f"{host}:{port}/#/experiments/{experiment.experiment_id}/runs"
+
+
 def benchmark_metrics_to_mlflow_dict(
     result: SyntheticGlmBenchmarkResult,
 ) -> dict[str, float]:
