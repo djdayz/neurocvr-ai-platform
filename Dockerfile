@@ -13,4 +13,6 @@ COPY tests ./tests
 RUN python -m pip install --upgrade pip && \
     pip install --no-cache-dir -e ".[dev]"
 
-CMD ["neurocvr", "--help"]
+EXPOSE 8000
+
+CMD ["uvicorn", "neurocvr.api.app:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -165,3 +165,38 @@ The benchmark run passed expected technical QC thresholds. CVR magnitude recover
 ## Research prototype notice
 
 This project is for research, education, and ML engineering portfolio demonstration only. It is not validated for clinical decision-making and must not be used as a medical device.
+
+## FastAPI service
+
+The project also exposes the synthetic CVR benchmark through a FastAPI web service.
+
+Run the API locally:
+
+uvicorn neurocvr.api.app:app --reload --port 8000
+
+Health check:
+
+curl http://127.0.0.1:8000/health
+
+Expected response:
+
+{"status":"ok","service":"neurocvr-ai"}
+
+Run synthetic GLM benchmark through the API:
+
+curl -X POST http://127.0.0.1:8000/benchmarks/synthetic-glm \
+  -H "Content-Type: application/json" \
+  -d '{
+    "spatial_shape": [2, 2, 1],
+    "n_timepoints": 220,
+    "tr_seconds": 1.55,
+    "tcnr": 5.0,
+    "seed": 42,
+    "delay_step_seconds": 2.0
+  }'
+
+Interactive API documentation is available at:
+
+http://127.0.0.1:8000/docs
+
+The API is intended for technical benchmarking and research workflow demonstration only. It is not for clinical decision-making.
