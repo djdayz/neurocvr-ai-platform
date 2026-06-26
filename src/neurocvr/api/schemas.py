@@ -60,3 +60,21 @@ class SyntheticBenchmarkResponse(BaseModel):
     seed: int
     cvr_magnitude: MetricResponse
     delay: MetricResponse
+
+
+class QcReportResponse(BaseModel):
+    """Technical QC report response."""
+
+    status: str
+    summary: str
+    cvr_assessment: str
+    delay_assessment: str
+    recommendations: list[str]
+    safety_notice: str
+
+
+class SyntheticBenchmarkQcResponse(BaseModel):
+    """Response body for benchmark metrics plus QC report."""
+
+    benchmark: SyntheticBenchmarkResponse
+    qc_report: QcReportResponse

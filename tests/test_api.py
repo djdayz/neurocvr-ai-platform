@@ -51,3 +51,27 @@ def test_synthetic_glm_benchmark_endpoint_rejects_bad_request() -> None:
     )
 
     assert response.status_code == 422
+
+
+def test_synthetic_glm_qc_report_endpoint() -> None:
+    response = client.post(
+        "/reports/synthetic-glm-qc",
+        json={
+            "spatial_shape": [2, 2, 1],
+            "n_timepoints": 220,
+            "tr_seconds": 1.55,
+            "tcnr": 5.0,
+            "seed": 42,
+            "delay_step_seconds": 2.0,
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["benchmark"]["run_name"] == "synthetic_glm_benchmark_qc_api"
+    assert data["benchmark"]["cvr_magnitude"]["n_voxels"] == 4
+    assert data["qc_report"]["status"] in ["pass", "warning", "fail"]
+    assert "summary" in data["qc_report"]
+    assert "not a diagnosis" in data["qc_report"]["safety_notice"]
